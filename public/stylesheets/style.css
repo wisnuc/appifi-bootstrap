@@ -1,0 +1,152 @@
+/*
+YUI 3.18.1 (build f7e7bcb)
+Copyright 2014 Yahoo! Inc. All rights reserved.
+Licensed under the BSD License.
+http://yuilibrary.com/license/
+*/
+html{color:#000;background:#FFF}body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,code,form,fieldset,legend,input,textarea,p,blockquote,th,td{margin:0;padding:0}table{border-collapse:collapse;border-spacing:0}fieldset,img{border:0}address,caption,cite,code,dfn,em,strong,th,var{font-style:normal;font-weight:normal}ol,ul{list-style:none}caption,th{text-align:left}h1,h2,h3,h4,h5,h6{font-size:100%;font-weight:normal}q:before,q:after{content:''}abbr,acronym{border:0;font-variant:normal}sup{vertical-align:text-top}sub{vertical-align:text-bottom}input,textarea,select{font-family:inherit;font-size:inherit;font-weight:inherit;*font-size:100%}legend{color:#000}
+
+
+html {
+  font-family: 'Roboto', Serif;
+  -webkit-font-smoothing: antialiased;
+  background: #EEEEEE;
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
+body {
+  font-size: 20px;
+  line-height: 32px;
+}
+
+.appbar-fix {
+  display: flex;
+}
+
+
+.barlittle {
+    background-color: #FFF;
+    width: 20px;
+    height: 20px;
+    float: left;
+    margin-left: 10px;
+    opacity: 0.1;
+    -moz-transform: scale(0.1);
+    -webkit-transform: scale(0.1);
+    -moz-animation: move 1s infinite linear;
+    -webkit-animation: move 1s infinite linear;
+}
+
+#block_1 {
+    -moz-animation-delay: .4s;
+    -webkit-animation-delay: .4s;
+}
+
+#block_2 {
+    -moz-animation-delay: .3s;
+    -webkit-animation-delay: .3s;
+}
+
+#block_3 {
+    -moz-animation-delay: .2s;
+    -webkit-animation-delay: .2s;
+}
+
+#block_4 {
+    -moz-animation-delay: .3s;
+    -webkit-animation-delay: .3s;
+}
+
+#block_5 {
+    -moz-animation-delay: .4s;
+    -webkit-animation-delay: .4s;
+}
+
+@-moz-keyframes move {
+    0% {
+        -moz-transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        -moz-transform: scale(0.7);
+        opacity: 0.1;
+    };
+}
+
+@-webkit-keyframes move {
+    0% {
+        -webkit-transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        -webkit-transform: scale(0.7);
+        opacity: 0.1;
+    };
+}
+
+.example-appear {
+  opacity: 0.01;
+}
+
+.example-appear.example-appear-active {
+  opacity: 1;
+  transition: opacity 150ms ease-in;
+}
+
+.example-enter {
+  opacity: 0.01;
+}
+
+.example-enter.example-enter-active {
+  opacity: 1;
+  transition: opacity 150ms ease-in;
+}
+
+.example-leave {
+  opacity: 1;
+}
+
+.example-leave.example-leave-active {
+  opacity: 0.01;
+  transition: opacity 150ms ease-in;
+}
+
+.fxample-enter {
+  animation: 300ms slidein linear;
+}
+
+.fxample-enter.fxample-enter-active {
+}
+
+.fxample-leave {
+  animation: 300ms slideout linear;
+}
+
+.fxample-leave.fxample-leave-active {
+}
+
+@keyframes slideout {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-24px);
+    opacity: 0.01;
+  }
+}
+
+@keyframes slidein {
+  from {
+    transform: translateY(24px);
+    opacity:0.01;
+  }
+
+  to {
+    transform: none;
+    opacity:1;
+  }
+}
