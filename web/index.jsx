@@ -328,7 +328,6 @@ const renderItemMessage = (item) => {
   )
 }
 
-
 const avatarColor = (item) => {
 
   let running = store.getState().server.current.process ? true : false
@@ -398,12 +397,12 @@ const renderItemRow = (item) => {
               style={{position:'relative', height:24, lineHeight:'24px', fontSize:16, flex:1}}
               component='div'
               transitionName="fxample"
-              transitionAppear={false}
+              transitionAppear={true}
               transitionEnter={true}
               transitionLeave={true}
-              transitionAppearTimeout={0}
-              transitionEnterTimeout={290}
-              transitionLeaveTimeout={290}
+              transitionAppearTimeout={150}
+              transitionEnterTimeout={150}
+              transitionLeaveTimeout={150}
             >
               <div key={simpleHash(itemMessage(item))} style={{position: 'absolute', opacity:0.87, width:'100%'}}>{ itemMessage(item) }</div>
             </ReactCSSTransitionGroup>

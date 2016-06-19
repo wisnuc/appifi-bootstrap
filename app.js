@@ -35,6 +35,12 @@ app.get('/state/status', (req, res) =>
 app.get('/state', (req, res) => 
   res.status(200).json(worker.getState()))
 
+app.get('/test', (req, res) => {
+
+  console.log(req)
+  res.status(200).json({hello: 'world'})
+})
+
 app.post('/operation', (req, res) => {
   worker.operation(req.body, (e, r) => {
     if (e) return res.status(500).json({ message: e.message }) 

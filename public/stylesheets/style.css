@@ -114,15 +114,22 @@ body {
   transition: opacity 150ms ease-in;
 }
 
+.fxample-appear {
+  animation: 150ms slidein linear
+} 
+
+.fxample-appear.fxample-enter-active {
+}
+
 .fxample-enter {
-  animation: 300ms slidein linear;
+  animation: 150ms slidein linear;
 }
 
 .fxample-enter.fxample-enter-active {
 }
 
 .fxample-leave {
-  animation: 300ms slideout linear;
+  animation: 150ms slideout linear;
 }
 
 .fxample-leave.fxample-leave-active {
