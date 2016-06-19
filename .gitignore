@@ -44,3 +44,4 @@ tmp/
 temp/
 tarballs/
 test.js
+build/
