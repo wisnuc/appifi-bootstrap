@@ -2,7 +2,6 @@ import https from 'https'
 import fs from 'fs'
 import child from 'child_process'
 
-import request from 'superagent'
 import rimraf from 'rimraf'
 import { createStore, combineReducers } from 'redux'
 

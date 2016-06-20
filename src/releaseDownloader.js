@@ -302,54 +302,6 @@ class releaseDownloader extends events {
 
 export default releaseDownloader
 
-/**
-import request from 'superagent'
-
-const releaseUrl = 'https://api.github.com/repos/wisnuc/appifi-tarball/releases'
-
-async function retrieveRemoteReleases() {
-
-  return new Promise(function(resolve, reject) {
-    request
-      .get(releaseUrl)
-      .set('Accept', 'application/json')
-      .end((err, res) => {
-        if (err) {
-          resolve(describe(err, {
-            when: 'retrieve remote releases',
-            url: releaseUrl 
-          }))
-        }
-        if (!res.ok) return console.log('res not ok') // TODO
-        resolve(res.body) 
-      })
-  })
-}
-
-async function test() {
-
-  let releases = await retrieveRemoteReleases()
-  
-  let download = new releaseDownloader(releases[0])
-  download.on('update', state => {
-    if (state.status === 'DOWNLOADING' && state.bytesWritten) {
-      console.log(`${state.bytesWritten} / ${state.contentLength}`)
-    }
-    else {
-      console.log(state.status)
-    }
-  })  
-
-  return await download.startAsync()
-}
-
-test()
-  .then(r => console.log(r))
-  .catch(e => console.log(e))
-
-**/
-
-
 
 
 

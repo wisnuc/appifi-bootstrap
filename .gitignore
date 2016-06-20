@@ -37,11 +37,7 @@ node_modules
 
 # bundle file
 public/bundle.js
+public/bundle.raw
 
 # working folder
-appifi/
-tmp/
-temp/
-tarballs/
-test.js
 build/

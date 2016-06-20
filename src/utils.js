@@ -6,7 +6,8 @@ import zlib from 'zlib'
 import rimraf from 'rimraf'
 import mkdirp from 'mkdirp'
 import tar from 'tar-stream'
-import request from 'superagent'
+// import request from 'superagent'
+import request from 'request'
 
 // regex test number
 const regNum = /^\d+$/
@@ -390,7 +391,7 @@ export async function probeTarballs(tarballsDir) {
 }
 
 export async function retrieveReleasesAsync(urlString) {
-
+/*
   return new Promise(resolve => {
     request
       .get(urlString)
@@ -412,6 +413,39 @@ export async function retrieveReleasesAsync(urlString) {
           resolve(res.body) 
         }
       })
+  })
+*/
+
+  let options = {
+    url: urlString,
+    headers: {
+      'User-Agent': 'request'
+    }
+  }
+
+  return new Promise(resolve => {
+    request(options, (err, response, body) => {
+      if (err) {
+        resolve(describe(err, {
+          when: 'retrieveReleaseAsync',
+          url: urlString
+        }))
+      }
+      else if (response.statusCode !== 200) {
+        console.log(response)
+        let err = new Error('Status code not 200')
+        err.code = 'EHTTPSTATUS'
+        resolve(describe(err, {
+          when: 'retrieveReleaseAsync',
+          url: urlString,
+          statusCode: response.statusCode
+        }))
+      }
+      else {
+        console.log(body)
+        resolve(JSON.parse(body))
+      }
+    })
   })
 }
 

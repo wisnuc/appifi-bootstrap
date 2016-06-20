@@ -1,4 +1,4 @@
-console.log(__dirname)
+var webpack = require('webpack')
 
 module.exports = {
 
@@ -22,6 +22,10 @@ module.exports = {
       }
     ]
   },
+  
+  plugins: [
+    new webpack.optimize.UglifyJsPlugin()
+  ],
 
   resolve: {
     moduleDirectories: [ 'node_modules'],
