@@ -13,9 +13,9 @@ import { describe, parseJSON, mkdirpAsync, readdirAsync,
 
 const releasesUrl = 'https://api.github.com/repos/wisnuc/appifi-tarball/releases'
 
-const tarballsDir = 'tarballs'
-const tmpFolder = 'tmp'
-const workingFolder = 'appifi'
+const tarballsDir = '/wisnuc/appifi-tarballs'
+const tmpDir = '/wisnuc/appifi-tmp'
+const appifiDir = '/wisnuc/appifi'
 
 const defaultCurrentState = {
   id : null,
@@ -114,16 +114,7 @@ const dispatch = (action) => store.dispatch(action)
 
 function startAppifi() {
 
-  let node_path = '/usr/local/bin/node'
-  let appifi_path = __dirname + '/../appifi'
-  let babel_path = appifi_path + '/../node_modules/.bin/babel-node'
-  let www_path = appifi_path + '/../bin/www'
-
-//  let appifi = child.spawn('node', [babel_path, www_path], { 
-//    cwd: appifi_path,
-    // env: Object.assign(Object.create(process.env), {NODE_PATH:appifi_path}),
-//  })
-  let appifi = child.spawn('npm', ['start'], {cwd: appifi_path})
+  let appifi = child.spawn('node', ['build/app.js'], {cwd: appifiDir})
 
   appifi.on('exit', (code, signal) => {
     console.log(`appifi exited with code ${code} and signal ${signal}`)
@@ -147,16 +138,16 @@ function startAppifi() {
 // 3) if appifi deployed and in locals, start it
 async function probeTarballAndStartAppifi() {
 
-  let r = await probeTarballs('tarballs')
+  let r = await probeTarballs(tarballsDir)
   if (r instanceof Error) return 
   dispatch({type: 'LOCALS_UPDATE', data: r})
   let locals = r
   console.log(`${locals.length} locals found`)
   
-  r = await probeAppifi()
+  r = await probeAppifi(appifiDir)
   if (r instanceof Error) {
     console.log(`appifi not found, rimraf anyway`)
-    await rimrafAsync('appifi')
+    await rimrafAsync(appifiDir)
     r = null
   }
 
@@ -169,13 +160,13 @@ async function probeTarballAndStartAppifi() {
 
   if (r) {
     console.log(`appifi found deployed but not in locals, with release id ${r.id}`)
-    r = await rimrafAsync('appifi')
+    r = await rimrafAsync(appifiDir)
     if (r instanceof Error) return r
     console.log(`polluted appifi removed`)
   }
 
   if (locals.length === 0) return null
-  r = await extractTarballAsync(locals[0].path, 'appifi') 
+  r = await extractTarballAsync(locals[0].path, appifiDir) 
   if (r instanceof Error) return r
   dispatch({type: 'APPIFI_INSTALLED', data: locals[0].release})
   console.log(`appifi deployed with release id ${locals[0].release.id}`) 
@@ -187,9 +178,9 @@ async function init() {
 
   let r
 
-  await rimrafAsync('tmp')
-  await mkdirpAsync('tmp')
-  await mkdirpAsync('tarballs')
+  await rimrafAsync(tmpDir)
+  await mkdirpAsync(tmpDir)
+  await mkdirpAsync(tarballsDir)
 
   console.log(`first trial of probing tarballs and start appifi`)
   await probeTarballAndStartAppifi()  
@@ -259,7 +250,7 @@ async function downloadAndUpdateLocals(release) {
       release
     })
 
-  let download = new releaseDownloader(release)
+  let download = new releaseDownloader(release, tarballsDir, tmpDir)
   download.on('update', d => dispatch({ type: 'TRIGGER' })) 
   dispatch({ type: 'DOWNLOAD_START', data: download })
 
@@ -304,7 +295,7 @@ async function installOp(id) {
 
   let local = r
 
-  r = await extractTarballAsync(local.path, 'appifi') 
+  r = await extractTarballAsync(local.path, appifiDir) 
   if (r instanceof Error) {
     r = describe(r, { 
       when: 'installOp', 
@@ -329,7 +320,7 @@ async function uninstallOp() {
   if (!current.id)
     return 'Error: not installed'
 
-  await rimrafAsync('appifi')
+  await rimrafAsync(appifiDir)
   dispatch({type: 'APPIFI_UNINSTALLED'})
 
   console.log(`appifi uninstalled`)
@@ -388,8 +379,8 @@ function operation(data, callback) {
     if (!current.process) {
       return callback(null, {message: 'WARNING: appifi is not running'})
     }
-    process.kill(current.process.pid + 5)
-    return callback(null, {message: 'appifi stopped'})
+    current.process.kill()
+    return callback(null, {message: 'KILL signal sent to appifi process'})
 
   case 'START_APPIFI':
     if (!current.id) 

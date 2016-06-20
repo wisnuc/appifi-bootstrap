@@ -354,7 +354,7 @@ export function tagValue(tagname) {
 export async function probeTarballs(tarballsDir) {
 
   let r
-  
+
   r = await mkdirpAsync(tarballsDir)
   if (r instanceof Error) return r
 
@@ -366,7 +366,10 @@ export async function probeTarballs(tarballsDir) {
   for (let i = 0; i < filenames.length; i++) {
 
     let summary = splitFileName(filenames[i])
-    if (!summary) continue
+    if (!summary) {
+      console.log(`invalid filename ${filenames[i]}`)
+      continue
+    }
 
     let path = `${tarballsDir}/${filenames[i]}`
     r = await testTarballAsync(path) 
@@ -413,10 +416,10 @@ export async function retrieveReleasesAsync(urlString) {
 }
 
 // return release file data, or null if not 
-export async function probeAppifi() {
+export async function probeAppifi(appifiDir) {
 
   let result
-  result = await readFileAsync('appifi/.release.json')
+  result = await readFileAsync(appifiDir + '/.release.json')
   if (result instanceof Error) {
     return describe(result, {
       when: 'probeAppifi'

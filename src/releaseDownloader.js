@@ -157,10 +157,10 @@ class streamResponseToFile extends events {
   }
 }
 
-async function mktmpfile() {
+async function mktmpfile(tmpDir) {
 
   return new Promise(resolve => {
-    fs.mkdtemp('tmp/tmp-', (err, folder) => {
+    fs.mkdtemp(tmpDir + '/tmp-', (err, folder) => {
       if (err) resolve(describe(err, {
         when: 'make temp dir'
       }))
@@ -186,11 +186,13 @@ function repackedName(release) {
 
 class releaseDownloader extends events {
 
-  constructor(release) {
+  constructor(release, tarballsDir, tmpDir) {
     super()
     this.status = 'INIT'
     this.release = release 
-    this.target = 'tarballs/' + repackedName(this.release)
+    this.tarballsDir = tarballsDir
+    this.tmpDir = tmpDir
+    this.target = tarballsDir + '/' + repackedName(this.release)
     this.injectPath = '.release.json' 
     this.injectData = JSON.stringify(this.release, null, '  ')
     this.error = null
@@ -214,20 +216,20 @@ class releaseDownloader extends events {
     let result
     this.urlString = this.release.tarball_url
 
-    result = await mkdirpAsync('tmp')
+    result = await mkdirpAsync(this.tmpDir)
     if (result instanceof Error) return this.fail(result)
     
-    result = await mkdirpAsync('tarballs')
+    result = await mkdirpAsync(this.tarballsDir)
     if (result instanceof Error) return this.fail(result)
 
     result = await rimrafAsync(this.target)
     if (result instanceof Error) return this.fail(result) 
 
-    result = await mktmpfile()
+    result = await mktmpfile(this.tmpDir)
     if (result instanceof Error) return this.fail(result)
     this.tmpfile1 = result
 
-    result = await mktmpfile()
+    result = await mktmpfile(this.tmpDir)
     if (result instanceof Error) return this.fail(result)
     this.tmpfile2 = result      
 
