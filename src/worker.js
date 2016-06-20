@@ -116,6 +116,10 @@ function startAppifi() {
 
   let appifi = child.spawn('node', ['build/app.js'], {cwd: appifiDir})
 
+  appifi.stdout.on('data', data => {
+    console.log(`:: ${data}`)
+  })
+
   appifi.on('exit', (code, signal) => {
     console.log(`appifi exited with code ${code} and signal ${signal}`)
     dispatch({
