@@ -41,3 +41,7 @@ public/bundle.raw
 
 # working folder
 build/
+
+# 
+bootstrap.js
+
