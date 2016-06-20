@@ -119,11 +119,11 @@ function startAppifi() {
   let babel_path = appifi_path + '/../node_modules/.bin/babel-node'
   let www_path = appifi_path + '/../bin/www'
 
-  let appifi = child.spawn('node', [babel_path, www_path], { 
-    cwd: appifi_path,
-    env: Object.assign(Object.create(process.env), {NODE_PATH:appifi_path}),
-  })
-  // let appifi = child.spawn('npm', ['start'], {cwd: appifi_path})
+//  let appifi = child.spawn('node', [babel_path, www_path], { 
+//    cwd: appifi_path,
+    // env: Object.assign(Object.create(process.env), {NODE_PATH:appifi_path}),
+//  })
+  let appifi = child.spawn('npm', ['start'], {cwd: appifi_path})
 
   appifi.on('exit', (code, signal) => {
     console.log(`appifi exited with code ${code} and signal ${signal}`)
