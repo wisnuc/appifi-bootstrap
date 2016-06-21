@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node build/main.js",
     "build": "babel src --out-dir build",
-    "devel": "NODE_PATH=. nodemon --exec babel-node --ignore appifi --ignore tarballs app.js",
+    "devel": "nodemon --exec babel-node src/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

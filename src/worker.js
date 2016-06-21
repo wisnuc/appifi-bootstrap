@@ -10,7 +10,7 @@ import { describe, parseJSON, mkdirpAsync, readdirAsync,
   readFileAsync, rimrafAsync, testTarballAsync, probeTarballs, probeAppifi,
   retrieveReleasesAsync, extractTarballAsync, tagValue } from './utils'
 
-const releasesUrl = 'https://api.github.com/repos/wisnuc/appifi-tarball/releases'
+const releasesUrl = 'https://api.github.com/repos/wisnuc/appifi-release/releases'
 
 const tarballsDir = '/wisnuc/appifi-tarballs'
 const tmpDir = '/wisnuc/appifi-tmp'
