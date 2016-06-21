@@ -1,3 +1,4 @@
+import https from 'https'
 import fs from 'fs'
 import url from 'url'
 import child from 'child_process'
@@ -7,7 +8,7 @@ import rimraf from 'rimraf'
 import mkdirp from 'mkdirp'
 import tar from 'tar-stream'
 // import request from 'superagent'
-import request from 'request'
+// import request from 'request'
 
 // regex test number
 const regNum = /^\d+$/
@@ -391,38 +392,14 @@ export async function probeTarballs(tarballsDir) {
 }
 
 export async function retrieveReleasesAsync(urlString) {
-/*
-  return new Promise(resolve => {
-    request
-      .get(urlString)
-      .set('Accept', 'application/json')
-      .end((err, res) => {
-        if (err) {
-          resolve(describe(err, {
-            when: 'retrieve releases, agent error',
-            url: urlString
-          }))
-        }
-        else if (!res.ok) {
-          resolve(describe(err, {
-            when: 'retrieve releases, res not ok',
-            url: urlString
-          })) 
-        }
-        else {
-          resolve(res.body) 
-        }
-      })
-  })
-*/
 
+/*
   let options = {
     url: urlString,
     headers: {
       'User-Agent': 'request'
     }
   }
-
   return new Promise(resolve => {
     request(options, (err, response, body) => {
       if (err) {
@@ -446,6 +423,52 @@ export async function retrieveReleasesAsync(urlString) {
         resolve(JSON.parse(body))
       }
     })
+  })
+*/
+
+  return await new Promise(resolve => {
+     
+    let opt = createUrlObject(urlString)
+    let result = ''
+
+    let req = https.request(opt, res => {
+      
+      if (res.statusCode === 200) {
+        
+        res.on('data', data => { 
+          result += data.toString()
+        })
+
+        res.on('error', e => {
+          resolve(describe(e, {
+            when: 'retrieveReleaseAsync',
+            urlString
+          }))
+        })
+
+        res.on('end', () => {
+          resolve(parseJSON(result))
+        })
+      }
+      else {
+      
+        let e = new Error(`Unexpected Http Status ${res.statusCode}`)
+        e.errno = 'EHTTPSTATUS'
+        resolve(describe(e, {
+          when: 'retrieveReleaseAsync',
+          urlString,
+          statusCode: res.statusCode
+        }))
+      }      
+    })
+
+    req.on('error', e => resolve(describe(e, {
+      when: 'retrieveReleasesAsync',
+      urlString,
+    })))
+
+    req.end()
+
   })
 }
 
