@@ -1,7 +1,10 @@
-import app from './src/app'
+
+require('babel-polyfill')
+
+var app = require('./src/app').default
 
 let html = require('raw!./public/index.html')
-let js = require('raw!./public/bundle.js')
+let js = require('raw!./public/bundle.raw')
 let css = require('raw!./public/stylesheets/style.css')
 
 app.get('/', (req, res) => 
