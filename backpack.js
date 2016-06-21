@@ -1,5 +1,5 @@
 
-require('babel-polyfill')
+// require('babel-polyfill')
 
 var app = require('./src/app').default
 
