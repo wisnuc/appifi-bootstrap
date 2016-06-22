@@ -1,3 +1,7 @@
+/*
+ *  This file is for development usage, for production, see backpack.js
+ */ 
+
 import path from 'path'
 
 import app from './app'
