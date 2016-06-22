@@ -1,0 +1,7 @@
+//e7cc9ade616fdbae763829342be33d5466f3ec12
+var fs = require('fs')
+
+fs.readFile('nonexist', (err, data) => {
+  console.log(err.code)
+  console.log(err.errno)
+})
