@@ -11,7 +11,7 @@ module.exports = {
   target: 'node',
   output: {
     path: __dirname,
-    filename: 'bootstrap.js'
+    filename: 'appifi-bootstrap.js'
   },
 
   module: {
@@ -36,5 +36,5 @@ module.exports = {
       }
     ]
   },
-
 }
+
