@@ -1,6 +1,3 @@
-
-// require('babel-polyfill')
-
 var app = require('./src/app').default
 
 let html = require('raw!./public/index.html')
