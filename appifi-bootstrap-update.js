@@ -15,6 +15,9 @@ var basefile = '/wisnuc/bootstrap/appifi-bootstrap.js'
 var tmpfile = basefile + '.tmp'
 var sha1file = basefile + '.sha1'
 
+var remotePath = '/wisnuc/appifi-bootstrap/release/bootstrap.js.sha1' 
+// var remotePath = '/wisnuc/appifi-bootstrap/release/test.js.sha1'
+
 function headerHash(text) {
 
   var newline = text.indexOf('\n')
@@ -28,8 +31,8 @@ function headerHash(text) {
 
 function promisifyMkdirp(pathname, context) {
 
-  return new Promise((resolve, reject) => {
-    child.exec('mkdir -p ' + pathname, (err, stdout, stderr) => {
+  return new Promise(function(resolve, reject) {
+    child.exec('mkdir -p ' + pathname, function(err, stdout, stderr) {
       if (err) {
         console.log('mkdirp ERROR')
         reject(err) 
@@ -44,8 +47,8 @@ function promisifyMkdirp(pathname, context) {
 
 function promisifyReadCurrentHash(context) {
 
-  return new Promise((resolve, reject) => {
-    fs.readFile(sha1file, (err, data) => {
+  return new Promise(function(resolve, reject) {
+    fs.readFile(sha1file, function (err, data) {
       if (err && err.code === 'ENOENT') {
         context.currentHash = null
         console.log('no current sha1file')
@@ -66,19 +69,19 @@ function promisifyReadCurrentHash(context) {
 
 function promisifyRetrieveBootstrapLatest(context) {
 
-  var buffer = null
+  var buffers = []
   var errFlag = false
 
-  return new Promise((resolve, reject) => {
+  return new Promise(function(resolve, reject) {
 
     var options = {
       hostname: 'raw.githubusercontent.com',
       port: 443,
-      path: '/wisnuc/appifi-bootstrap/release/bootstrap.js.sha1',
+      path: remotePath,
       method: 'GET'
     };
 
-    var req = https.request(options, (res) => {
+    var req = https.request(options, function(res) {
 
       console.log('response status code: ' + res.statusCode)
 
@@ -91,11 +94,7 @@ function promisifyRetrieveBootstrapLatest(context) {
       }
 
       res.on('data', function(data) {
-        
-        if (buffer === null) 
-          buffer = data
-        else 
-          buffer += data
+        buffers.push(data)
       })
       
       res.on('error', function(e) {
@@ -104,17 +103,19 @@ function promisifyRetrieveBootstrapLatest(context) {
         reject(e)
       }) 
 
-      res.on('end', () => {
+      res.on('end', function() {
 
         if (errFlag) return // already rejected 
 
         console.log('response end')
-        context.latest = buffer.toString()
+        context.latest = Buffer.concat(buffers)
+        
+        console.log('concatenated buffer length: ' + context.latest.length)
         resolve(context)
       })
     });
 
-    req.on('error', (e) => {
+    req.on('error', function(e) {
       console.log('request error, reject')
       errFlag = true
       reject(e)
@@ -127,9 +128,9 @@ function promisifyRetrieveBootstrapLatest(context) {
 
 function promisifyWriteFile(filename, data, context) {
 
-  console.log('writing data to ' + filename)
-  return new Promise((resolve, reject) => {
-    fs.writeFile(filename, data, { flag: 'w+' }, err => {
+  console.log('writing data to ' + filename + ', length: ' + data.length)
+  return new Promise(function(resolve, reject) {
+    fs.writeFile(filename, data, { flag: 'w+' }, function(err) {
       if (err) {
         console.log('writing to file failed, reject')
         console.log('stdout: ' + stdout)
@@ -147,8 +148,8 @@ function promisifyWriteFile(filename, data, context) {
 function promisifyReadFile(filename, prop, context) {
 
   console.log('reading back ' + filename)
-  return new Promise((resolve, reject) => {
-    fs.readFile(filename, (err, data) => {
+  return new Promise(function (resolve, reject) {
+    fs.readFile(filename, function(err, data) {
       if (err) { 
         console.log('reading back failed, reject')
         return reject(err)
@@ -166,7 +167,7 @@ function promisifyCompareHash(context) {
     console.log('latest empty, reject. ERROR')
   }
 
-  var latestHash = headerHash(context.latest)
+  var latestHash = headerHash(context.latest.toString())
 
   console.log('current hash: ' + context.currentHash)
   console.log('latest hash: ' + latestHash)
@@ -182,19 +183,18 @@ function promisifyCompareHash(context) {
 
 function promisifyVerifyReadback(context) {
 
-  if (context.readback === context.latest) {
-    console.log('readback equals to latest')
+  if (context.readback.toString() === context.latest.toString()) {
+    console.log('readback equals to latest, continue')
   }
   else {
-    console.log('readback not equals to latest')
+    console.log('readback not equals to latest, reject, ERROR')
+    return reject('READBACK_MISMATCH_DOWNLOADED')
   }
  
-  var text = context.latest 
+  var text = context.latest.toString()
   var newline = text.indexOf('\n')
   var hashString = text.slice(2, newline)
   var body = text.slice(newline + 1)
-
-  console.log(body)
 
   var SHA1 = new Hashes.SHA1
   var bodyHash = SHA1.hex(body)
@@ -202,19 +202,19 @@ function promisifyVerifyReadback(context) {
   console.log('hash string: ' + hashString)
   console.log('body hash: ' + bodyHash)
   if (bodyHash === hashString) {
-    console.log('match, resolve')
+    console.log('integrity check, match, resolve')
     return Promise.resolve(context)
   }
   else {
-    console.log('mismatch, reject')
+    console.log('integrity check, mismatch, reject, ERROR')
     return Promise.reject('READBACK_HASH_MISMATCH')
   }
 }
 
 function promisifyFinalMove(context) {
 
-  return new Promise((resolve, reject) => { 
-    child.exec('mv ' + tmpfile + ' ' + sha1file , (err, stdout, stderr) => {
+  return new Promise(function(resolve, reject) { 
+    child.exec('mv ' + tmpfile + ' ' + sha1file , function(err, stdout, stderr) {
       if (err) return reject(err)
       resolve(context)   
     })
@@ -224,24 +224,31 @@ function promisifyFinalMove(context) {
 var context = {}
 
 promisifyMkdirp('/wisnuc/bootstrap', context)
-  .then(context => 
-    promisifyReadCurrentHash(context))
-  .then(context => 
-    promisifyRetrieveBootstrapLatest(context))
-  .then(context => 
-    promisifyCompareHash(context))   
-  .then(context => 
-    promisifyWriteFile('/wisnuc/bootstrap/appifi-bootstrap.js.tmp', context.latest, context))
-  .then(context => 
-    promisifyReadFile('/wisnuc/bootstrap/appifi-bootstrap.js.tmp', 'readback', context))
-  .then(context => 
-    promisifyVerifyReadback(context))
-  .then(context => 
-    promisifyFinalMove(context))
-  .then(context => {
+  .then(function(context) {
+    return promisifyReadCurrentHash(context)
+  })
+  .then(function(context) {
+    return promisifyRetrieveBootstrapLatest(context)
+  })
+  .then(function(context) {
+    return promisifyCompareHash(context)
+  })
+  .then(function(context) {
+    return promisifyWriteFile('/wisnuc/bootstrap/appifi-bootstrap.js.tmp', context.latest, context)
+  })
+  .then(function(context) {
+    return promisifyReadFile('/wisnuc/bootstrap/appifi-bootstrap.js.tmp', 'readback', context)
+  })
+  .then(function(context) {
+    return promisifyVerifyReadback(context)
+  })
+  .then(function(context) {
+    return promisifyFinalMove(context)
+  })
+  .then(function(context) {
     console.log('success')
   })
-  .catch(e => {
+  .catch(function(e) {
     console.log('skipped or failed')
     console.log(e)
   })
