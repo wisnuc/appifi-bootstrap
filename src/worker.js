@@ -23,6 +23,16 @@ const defaultCurrentState = {
   signal: null
 }
 
+const devmode = (state = false, action) => {
+
+  switch(action.type) {
+  case 'DEVMODE_ON':
+    return true
+  default:
+    return state
+  }
+}
+
 const current = (state = defaultCurrentState, action) => {
 
   switch(action.type) {
@@ -104,7 +114,7 @@ const downloads = (state = [], action) => {
   }
 }
 
-let store = createStore(combineReducers({current, locals, remotes, downloads}))
+let store = createStore(combineReducers({devmode, current, locals, remotes, downloads}))
 let status = 0
 
 store.subscribe(() => { status++ })
@@ -113,12 +123,12 @@ const dispatch = (action) => store.dispatch(action)
 
 function startAppifi() {
 
-  let appifi = child.spawn('node', ['build/app.js'], {cwd: appifiDir})
-
+  let appifi = child.spawn('node', ['build/app.js'], {cwd: appifiDir, stdio:'inherit'})
+/**
   appifi.stdout.on('data', data => {
     console.log(`:: ${data}`)
   })
-
+**/
   appifi.on('exit', (code, signal) => {
     console.log(`appifi exited with code ${code} and signal ${signal}`)
     dispatch({
@@ -157,6 +167,7 @@ async function probeTarballAndStartAppifi() {
   if (r && locals.find(l => l.release.id === r.id)) {
     console.log(`appifi found deployed, with release id ${r.id}`)
     dispatch({type: 'APPIFI_INSTALLED', data: r })
+    if (r.prerelease === true) dispatch({type: 'DEVMODE_ON'})
     startAppifi()
     return null
   }
@@ -172,6 +183,7 @@ async function probeTarballAndStartAppifi() {
   r = await extractTarballAsync(locals[0].path, appifiDir) 
   if (r instanceof Error) return r
   dispatch({type: 'APPIFI_INSTALLED', data: locals[0].release})
+  if (locals[0].release.prerelease === true) dispatch({type: 'DEVMODE_ON'})
   console.log(`appifi deployed with release id ${locals[0].release.id}`) 
   startAppifi()
   return null
@@ -238,6 +250,7 @@ const getState = () => {
   let state = store.getState()
   return Object.assign({}, state, {
     status,
+    remotes: state.devmode ? state.remotes : state.remotes.filter(r => r.prerelease !== true),
     current: getCurrentState(),
     downloads: getDownloadStates()
   })
@@ -398,7 +411,7 @@ function operation(data, callback) {
   }
 }
 
-export default { init, getState, getStatus, operation }
+export default { init, getState, getStatus, operation, dispatch }
 
 
 

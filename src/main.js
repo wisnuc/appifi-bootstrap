@@ -12,7 +12,7 @@ app.get('/', (req, res) =>
 
 app.get('/bundle.js', (req, res) => 
   res.set('Content-Type', 'application/javascript')
-    .sendFile(path.join(__dirname, '../public/bundle.raw')))
+    .sendFile(path.join(__dirname, '../public/bundle.js')))
 
 app.get('/stylesheets/style.css', (req, res) => 
   res.set('Content-Type', 'text/css')
