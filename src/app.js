@@ -24,9 +24,13 @@ app.get('/state', (req, res) =>
   res.status(200).json(worker.getState()))
 
 app.get('/test', (req, res) => {
-
-  console.log(req)
   res.status(200).json({hello: 'world'})
+})
+
+app.get('/devmode', (req, res) => {
+  worker.dispatch({ type: 'DEVMODE_ON' }) 
+  console.log('<<< developer mode on >>>')
+  res.status(200).json({})
 })
 
 app.post('/operation', (req, res) => {
