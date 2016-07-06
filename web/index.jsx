@@ -377,7 +377,7 @@ const renderItemRow = (item) => {
             <Avatar style={{transition:'all 300ms'}} backgroundColor={avatarColor(item)}  />
           </div>
           <div style={{paddingTop:16, paddingBottom:16, paddingLeft:0, width:200, color:rowFontColor(item) }}>
-            <div style={{fontSize:14, lineHeight:1.5, opacity:0.87}}>Version: {item.tag}</div>
+            <div style={{fontSize:14, lineHeight:1.5, opacity:0.87}}>Version: {item.tag} {item.prerelease ? '(BETA)' : ''} </div>
             <div style={{fontSize:14, lineHeight:1.5, opacity:0.54}}>{item.publish_time}</div>
           </div>
         </div>

@@ -167,6 +167,7 @@ async function probeTarballAndStartAppifi() {
   if (r && locals.find(l => l.release.id === r.id)) {
     console.log(`appifi found deployed, with release id ${r.id}`)
     dispatch({type: 'APPIFI_INSTALLED', data: r })
+    if (r.prerelease === true) dispatch({type: 'DEVMODE_ON'})
     startAppifi()
     return null
   }
@@ -182,6 +183,7 @@ async function probeTarballAndStartAppifi() {
   r = await extractTarballAsync(locals[0].path, appifiDir) 
   if (r instanceof Error) return r
   dispatch({type: 'APPIFI_INSTALLED', data: locals[0].release})
+  if (locals[0].release.prerelease === true) dispatch({type: 'DEVMODE_ON'})
   console.log(`appifi deployed with release id ${locals[0].release.id}`) 
   startAppifi()
   return null

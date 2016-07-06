@@ -30,7 +30,7 @@ app.get('/test', (req, res) => {
 app.get('/devmode', (req, res) => {
   worker.dispatch({ type: 'DEVMODE_ON' }) 
   console.log('<<< developer mode on >>>')
-  res.status(200).json({})
+  res.status(200).json({ message: 'developer mode enabled!'})
 })
 
 app.post('/operation', (req, res) => {
