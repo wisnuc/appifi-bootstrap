@@ -1,4 +1,5 @@
 var path = require('path')
+var child = require('child_process')
 var express = require('express')
 var bodyParser = require('body-parser')
 var logger = require('morgan')
@@ -43,24 +44,33 @@ app.post('/operation', (req, res) => {
 
 app.listen(3001, function() {
 
-  console.log('WISNUC Bootstrap listening on port 3001!')
+  console.log('WISNUC Appifi Bootstrap listening on port 3001!')
 
-  var pub = respawn([
-    'avahi-publish-service', 
-    'WISNUC Appifi Bootstrap', 
-    '_http._tcp', 
-    '3001'
-  ], {
-    maxRestarts: 1000,
-    sleep: 30000,
+  child.exec('which avahi-publish-service', err => {
+
+    if (err) {
+      console.log('avahi publish service not found, no broadcasting')
+      return
+    }
+
+    var pub = respawn([
+      'avahi-publish-service', 
+      'WISNUC Appifi Boostrap', 
+      '_http._tcp', 
+      '3001'
+    ], {
+      maxRestarts: 1000,
+      sleep: 30000,
+    })
+
+    pub.on('spawn', () => 
+      console.log('avahi advertising "WISNUC Appifi Bootstrap" @ http:3001'))
+    pub.on('exit', (code, signal) => 
+      console.log(`avahi-publish-service exit with code: ${code}, signal: ${signal}, respawn later`))
+
+    pub.start()
+
   })
-
-  pub.on('spawn', () => 
-    console.log('publishing WISNUC:Bootstrap @ http:3001'))
-  pub.on('exit', (code, signal) => 
-    console.log(`avahi publish exit with code: ${code}, signal: ${signal}`))
-
-  pub.start()
 })
 
 export default app
