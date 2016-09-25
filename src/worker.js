@@ -2,6 +2,7 @@ import https from 'https'
 import fs from 'fs'
 import child from 'child_process'
 
+import respawn from 'respawn'
 import rimraf from 'rimraf'
 import { createStore, combineReducers } from 'redux'
 
@@ -19,8 +20,6 @@ const appifiDir = '/wisnuc/appifi'
 const defaultCurrentState = {
   id : null,
   process: null,
-  code: null,
-  signal: null
 }
 
 const devmode = (state = false, action) => {
@@ -37,29 +36,16 @@ const current = (state = defaultCurrentState, action) => {
 
   switch(action.type) {
   case 'APPIFI_INSTALLED':
-    return { 
-      id: action.data.id,
-      process: null,
-      code: null,
-      signal: null
-    }
+    return { id: action.data.id, process: null }
 
   case 'APPIFI_UNINSTALLED':
     return defaultCurrentState
 
   case 'APPIFI_STARTED':
-    return Object.assign({}, state, { 
-      process: action.data,
-      code: null,
-      signal: null
-    })
+    return Object.assign({}, state, { process: action.data })
 
   case 'APPIFI_STOPPED':
-    return Object.assign({}, state, {
-      process: null,
-      code: action.data.code ? action.data.code : null,
-      signal: action.data.signal ? action.data.signal : null
-    })
+    return Object.assign({}, state, { process: null })
 
   default:
     return state
@@ -123,25 +109,36 @@ const dispatch = (action) => store.dispatch(action)
 
 function startAppifi() {
 
-  let appifi = child.spawn('node', ['build/app.js'], {cwd: appifiDir, stdio:'inherit'})
-/**
-  appifi.stdout.on('data', data => {
-    console.log(`:: ${data}`)
-  })
-**/
-  appifi.on('exit', (code, signal) => {
-    console.log(`appifi exited with code ${code} and signal ${signal}`)
-    dispatch({
-      type: 'APPIFI_STOPPED',
-      data: { code, signal }
-    }) 
+  let appifi = respawn(['node', 'build/app.js'], {
+    cwd: appifiDir,
+    env: {NODE_ENV: 'production'},
+    maxRestarts: -1,
+    stdio: 'inherit',
   })
 
-  console.log(`appifi started as ${appifi.pid}`)
-  dispatch({ 
-    type: 'APPIFI_STARTED', 
-    data: appifi  
+  appifi.on('start', () => {
+    console.log('[respawn]: appifi started')
+    dispatch({
+      type: 'APPIFI_STARTED',
+      data: appifi 
+    })
   })
+
+  appifi.on('stop', () => {
+    console.log('[respawn]: appifi stopped')
+    dispatch({
+      type: 'APPIFI_STOPPED'
+    })
+  })
+
+  appifi.on('crash', () => console.log('[respawn]: appifi crashed'))
+  appifi.on('sleep', () => console.log('[respawn]: appifi slept'))
+  appifi.on('spawn', process => 
+    console.log(`[respawn]: appifi spawned with pid ${process.pid}`))
+  appifi.on('exit', (code, signal) => 
+    console.log(`[respawn]: appifi exited with code ${code}, signal ${signal}`))
+
+  appifi.start()
 }
 
 // This function probe tarballs first,
@@ -229,7 +226,7 @@ async function init() {
 const getCurrentState = () => {
 
   let current = store.getState().current
-  let process = current.process ? current.process.pid : null
+  let process = current.process ? true : false
   return Object.assign({}, current, { process })
 }
 
@@ -395,7 +392,7 @@ function operation(data, callback) {
     if (!current.process) {
       return callback(null, {message: 'WARNING: appifi is not running'})
     }
-    current.process.kill()
+    current.process.stop()
     return callback(null, {message: 'KILL signal sent to appifi process'})
 
   case 'START_APPIFI':
