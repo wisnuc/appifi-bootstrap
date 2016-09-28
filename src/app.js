@@ -6,7 +6,6 @@ var bodyParser = require('body-parser')
 var logger = require('morgan')
 var respawn = require('respawn')
 var UUID = require('node-uuid')
-var validator = require('validator')
 
 import worker from './worker'
 worker.init().then(r => console.log(r)).catch(e => console.log(e))
@@ -77,7 +76,24 @@ const sysinfo = (callback) => {
   })
 }
 
+const sanitize = (string) => {
+
+  if (string.startsWith('VMware-')) {
+    let sub = string.slice(7).replace('-', ' ').split(' ').join('')
+    if (/^[0-9a-fA-F]{32}$/.test(sub))
+      string = sub 
+  }
+
+  return string.split('').filter(c => /^[A-Za-z0-9]$/.test(c)).join('') 
+}
+
 app.listen(3001, function() {
+
+  let tmp001 = "VMware-56 4d 6d 71 82 d1 fe a9-63 e4 03 75 4e d5 34 7a"
+  let tmp002 = "564D6D71-82D1-FEA9-63E4-03754ED5347A"
+
+  console.log(`sanitize "${tmp001}" to ${sanitize(tmp001)}`)
+  console.log(`sanitize "${tmp002}" to ${sanitize(tmp002)}`)
 
   console.log('WiSNuC Appifi Bootstrap listening on port 3001!')
 
@@ -115,13 +131,15 @@ app.listen(3001, function() {
     else {
 
       let { model, serial, uuid } = info
+      serial = sanitize(serial)
+      uuid = sanitize(uuid)
 
-      if (typeof serial === 'string' && serial.length > 6)
+      if (typeof serial === 'string' && serial.length >= 8)
         hostname = `wisnuc-${model}-${serial}`
-      else if (typeof uuid === 'string' && validator.isUUID(uuid))
-        hostname = `wisnuc-${model}-${uuid.split('-').join('').slice(0, 8)}`
+      else if (typeof uuid === 'string' && uuid.length >= 8)
+        hostname = `wisnuc-${model}-${uuid.slice(0, 8)}`
       else
-        hostname = `wisnuc-tmp-${UUID.v4().split('-').join('')}`
+        hostname = `wisnuc-tmp-${sanitize(UUID.v4()).slice(0, 8)}`
     }
 
     child.exec(`avahi-set-host-name ${hostname}`, err => {
