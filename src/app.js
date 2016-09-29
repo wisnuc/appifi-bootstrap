@@ -132,7 +132,7 @@ app.listen(3001, function() {
 
       let { model, serial, uuid } = info
       serial = sanitize(serial)
-      uuid = sanitize(uuid)
+      if (uuid) uuid = sanitize(uuid)
 
       if (typeof serial === 'string' && serial.length >= 8)
         hostname = `wisnuc-${model}-${serial}`
