@@ -37,6 +37,22 @@ app.get('/developer', (req, res) => {
     '<body><h3>Beta release available now, redirecting in 3 seconds...</h3></body></html>')
 })
 
+app.delete('/fruitmix', (req, res) => {
+
+  // developer mode must be on
+  if (!worker.getState().devmode)
+    return res.status(404).end()
+
+  // dangerous file (or directory) must exists
+  fs.stat('/run/wisnuc/dangerous', (err, stats) => {
+    if (err) return res.status(404).end() 
+    worker.deleteFruitmix(err => {
+      if (err) return res.status(500).json(err)
+      return res.status(200).json({ message: 'success' })
+    }) 
+  })
+})
+
 app.post('/operation', (req, res) => {
   worker.operation(req.body, (e, r) => {
     if (e) return res.status(500).json({ message: e.message })

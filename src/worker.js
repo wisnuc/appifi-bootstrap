@@ -107,9 +107,11 @@ store.subscribe(() => { status++ })
 
 const dispatch = (action) => store.dispatch(action)
 
+let appifi
+
 function startAppifi() {
 
-  let appifi = respawn(['node', 'build/app.js'], {
+  appifi = respawn(['node', 'build/app.js'], {
     cwd: appifiDir,
     env: {NODE_ENV: 'production'},
     maxRestarts: -1,
@@ -139,6 +141,38 @@ function startAppifi() {
     console.log(`[respawn]: appifi exited with code ${code}, signal ${signal}`))
 
   appifi.start()
+}
+
+function deleteFruitmix(callback) {
+  
+  if (!appifi) return callback(new Error('not started'))
+  fs.readFile('/etc/wisnuc.json', (err, data) => {
+    if (err) return callback(err)
+
+    let obj
+    try {
+      obj = JSON.parse(data.toString())        
+    }
+    catch (e) {
+      if (e) return callback(new Error('wisnuc json parse failed'))
+    }
+
+    if (!obj.lastUsedVolume) return callback(new Error('no last used volume found'))
+
+    let fruitroot = `/run/wisnuc/volumes/${obj.lastUsedVolume}/wisnuc/fruitmix`
+
+    console.log(`fruitmix root is set to ${fruitroot}`)
+    console.log('stopping appifi')
+    appifi.stop(() => {
+      console.log('removing fruitmix root')
+      rimraf(fruitroot, err => {
+        if (err) return callback(err)
+        console.log('starting appifi')
+        appifi.start()
+        callback(null)
+      })
+    })
+  })
 }
 
 // This function probe tarballs first,
@@ -408,7 +442,7 @@ function operation(data, callback) {
   }
 }
 
-export default { init, getState, getStatus, operation, dispatch }
+export default { init, getState, getStatus, operation, dispatch, deleteFruitmix }
 
 
 
