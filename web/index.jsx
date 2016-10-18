@@ -562,14 +562,20 @@ const renderServerState = () => {
   
   let items = buildItems()
 
+  const releaseLoading = store.getState().server.releaseLoading
   const snackbarOnRequestClose = () => dispatch({ type: 'SNACKBAR_CLOSE', }) 
+  const releaseReload = () => dispatchOp('RELOAD_RELEASE') 
 
   return (
     <div>
       { renderPanel() }
       <div id='flex-container' style={{width:'100vw', display:'flex', flexDirection:'column', alignItems:'center'}}>
+        <div style={{display:'flex', width:'66%', height:48, alignItems: 'center', justifyContent: 'flex-end'}}>
+          { releaseLoading && (<CircularProgress size={0.4} thickness={7}/>)}
+          <FlatButton label='reload' disabled={releaseLoading} onTouchTap={releaseReload} />
+        </div>
         { items.map(renderItemRow) }
-        <div style={{height:1024}} />
+        <div style={{height:800}} />
       </div>
       <Snackbar open={store.getState().snackbarOpen} message={store.getState().snackbarMessage} 
         autoHideDuration={4000} onRequestClose={snackbarOnRequestClose} />

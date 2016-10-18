@@ -8,7 +8,7 @@ var respawn = require('respawn')
 var UUID = require('node-uuid')
 
 import worker from './worker'
-worker.init().then(r => console.log(r)).catch(e => console.log(e))
+worker.init().then(r => console.log('worker initialized')).catch(e => console.log(e))
 
 var app = express()
 

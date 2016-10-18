@@ -84,6 +84,20 @@ const remotes = (state = [], action) => {
   }
 }
 
+const releaseLoading = (state = false, action) => {
+
+  switch(action.type) {
+  case 'RELEASE_LOAD_START':
+    return true 
+
+  case 'RELEASE_LOAD_STOP':
+    return false
+
+  default:
+    return state
+  }
+}
+
 const downloads = (state = [], action) => {
 
   switch(action.type) {
@@ -100,7 +114,7 @@ const downloads = (state = [], action) => {
   }
 }
 
-let store = createStore(combineReducers({devmode, current, locals, remotes, downloads}))
+let store = createStore(combineReducers({devmode, current, locals, remotes, releaseLoading, downloads}))
 let status = 0
 
 store.subscribe(() => { status++ })
@@ -231,30 +245,7 @@ async function init() {
   console.log(`first trial of probing tarballs and start appifi`)
   await probeTarballAndStartAppifi()  
 
-  console.log(`retrieving remote releases`)
-  r = await retrieveReleasesAsync(releasesUrl) 
-  if (!(r instanceof Error)) { 
-    dispatch({ type: 'REMOTES_UPDATE', data: r })
-    console.log(`${r.length} remotes found`)
-
-/** NO auto install for debugging
-
-    let locals = store.getState().locals
-    if (locals.length === 0) {
-
-      let download = new releaseDownloader(r[0])
-      download.on('update', state => console.log(state.status))
-
-      r = await download.startAsync() 
-      if (!(r instanceof Error)) {
-        r = probeTarballAndStartAppifi()
-      }
-    } 
-**/
-  }
-
-  if (r instanceof Error) return r
-  return 'successfully initialized'
+  return await loadRelease()
 }
 
 const getCurrentState = () => {
@@ -283,7 +274,8 @@ const getState = () => {
     status,
     remotes: state.devmode ? state.remotes : state.remotes.filter(r => r.prerelease !== true),
     current: getCurrentState(),
-    downloads: getDownloadStates()
+    downloads: getDownloadStates(),
+    releaseLoading: state.releaseLoading
   })
 }
 
@@ -374,6 +366,26 @@ async function uninstallOp() {
   return 'successfully uninstalled'
 }
 
+async function loadRelease() {
+
+  let r
+
+  dispatch({ type: 'RELEASE_LOAD_START' })
+
+  console.log(`retrieving remote releases`)
+  r = await retrieveReleasesAsync(releasesUrl) 
+  if (!(r instanceof Error)) { 
+    dispatch({ type: 'REMOTES_UPDATE', data: r })
+    console.log(`${r.length} remotes found`)
+  }
+  else {
+    console.log(`failed to load releases`)
+  }
+
+  dispatch({ type: 'RELEASE_LOAD_STOP' })
+  return (r instanceof Error) ? r : null
+}
+
 function operation(data, callback) {
 
   let {current, locals, remotes, downloads} = store.getState()
@@ -381,6 +393,11 @@ function operation(data, callback) {
   const m = (msg) => callback(null, {message: msg})
 
   switch(data.operation) {
+  case 'RELOAD_RELEASE': {
+    if (!store.getState().releaseLoading) 
+      loadRelease().then(() => {}).catch(e => {})
+    return m('Loading')
+  }
 
   case 'DOWNLOAD': {
     if (locals.find(l => l.release.id === data.id))
