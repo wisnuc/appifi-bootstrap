@@ -36,7 +36,7 @@ The entry file is then `build/main.js`
 The real file that deployed onto users computer, is
 
 ```
-https://raw.githubusercontent.com/wisnuc/appifi-bootstrap/release/bootstrap.js.sha1
+https://raw.githubusercontent.com/wisnuc/appifi-bootstrap/release/appifi-bootstrap.js.sha1
 ```
 
 in **release** branch. You can verify this in the source code in `appifi-bootstrap-update` repository.
@@ -46,7 +46,7 @@ Update to release branch should ALWAYS start from master branch.
 You can manually test the sha1 version through 
 
 ```
-https://raw.githubusercontent.com/wisnuc/appifi-bootstrap/master/bootstrap.js.sha1
+https://raw.githubusercontent.com/wisnuc/appifi-bootstrap/master/appifi-bootstrap.js.sha1
 ```
 
 
