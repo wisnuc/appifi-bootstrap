@@ -31,4 +31,9 @@ The entry file is then `build/main.js`
 * `appifi-bootstrap.js` is the webpacked bundle including front-end, back-end, as well as static files.
 * `appifi-bootstrap.js.sha1` is the `appifi-bootstrap.fs` pre-pended with a single line of comment, which include the SHA1 hash for the file.
 
+## Deployment and Testing
+
+The real file that deployed onto users computer, is `/wisnuc/appifi-bootstrap/release/appifi-bootstrap.js.sha1` in **release** branch. You can verify this in the source code in `appifi-bootstrap-update` repository.
+
+Update to release branch should ALWAYS start from master branch. You can manually test the sha1 version through `https://www.github.com/wisnuc/appifi-bootstrap/master/appifi-bootstrap.js.sha1`
 
