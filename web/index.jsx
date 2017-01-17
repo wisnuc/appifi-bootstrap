@@ -441,7 +441,7 @@ const renderPanel = () => {
     if (running) 
       return (
         <div style={{width:'100%', height:64, display:'flex', alignItems:'flex-start', justifyContent:'flex-end'}} >
-          <FlatButton style={{color:'#FFF', marginTop:8, marginRight:8}} label='appifi' onTouchTap={goToAppifiButtonOnTouchTap} /> 
+          { false && <FlatButton style={{color:'#FFF', marginTop:8, marginRight:8}} label='appifi' onTouchTap={goToAppifiButtonOnTouchTap} /> }
         </div>
       )
     return null
@@ -479,7 +479,6 @@ const renderPanel = () => {
 
   let titleStyle = {height:100, fontSize:56, fontWeight:'lighter', lineHeight:1.5, color:'#FFF', 
     display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center'}
-
 
   let shouldRenderTitle = appifiInstalling() || appifiUninstalling()
   let renderTitle = () => {
@@ -575,7 +574,7 @@ const renderServerState = () => {
           <FlatButton label='reload' disabled={releaseLoading} onTouchTap={releaseReload} />
         </div>
         { items.map(renderItemRow) }
-        <div style={{height:800}} />
+        <div style={{height:336}} />
       </div>
       <Snackbar open={store.getState().snackbarOpen} message={store.getState().snackbarMessage} 
         autoHideDuration={4000} onRequestClose={snackbarOnRequestClose} />
@@ -586,15 +585,13 @@ const renderServerState = () => {
 class App extends React.Component {
 
   getChildContext() {
+
     let muiTheme = getMuiTheme({
       palette: {
         primary1Color: colors.blueGrey500,
         primary2Color: colors.blueGrey800,
         pickerHeaderColor: colors.blueGrey500,
         accent1Color: colors.orangeA200
-      },
-      appBar: {
-        height: 50
       }
     })
     return {muiTheme}

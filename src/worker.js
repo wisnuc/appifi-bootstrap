@@ -128,6 +128,7 @@ function startAppifi() {
   appifi = respawn(['node', 'build/app.js'], {
     cwd: appifiDir,
     env: {NODE_ENV: 'production'},
+    sleep: [1000, 2000, 4000, 8000, 16000, 32000, 64000],
     maxRestarts: -1,
     stdio: 'inherit',
   })

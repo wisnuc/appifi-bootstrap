@@ -37,6 +37,20 @@ app.get('/developer', (req, res) => {
     '<body><h3>Beta release available now, redirecting in 3 seconds...</h3></body></html>')
 })
 
+app.get('/log', (req, res) => {
+
+  let cmd
+  try {
+    cmd = child.spawn('journalctl', ['-u', 'appifi-bootstrap'])  
+  }
+  catch (e) {
+    console.log(e)
+    return res.status(500).json({ message: 'spawn failed' })
+  }
+
+  cmd.stdout.pipe(res)
+})
+
 app.delete('/fruitmix', (req, res) => {
 
   // developer mode must be on
