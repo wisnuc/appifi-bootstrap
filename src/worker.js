@@ -1,12 +1,16 @@
-import https from 'https'
-import fs from 'fs'
-import child from 'child_process'
+const Promise = require('bluebird')
+const path = require('path')
+const fs = require('fs')
+const child = require('child_process')
+const https = require('https')
 
-import respawn from 'respawn'
-import rimraf from 'rimraf'
+const rimraf = require('rimraf')
+// const rimrafAsync = Promise.promisify(rimraf)
+
+const respawn = require('respawn')
 import { createStore, combineReducers } from 'redux'
 
-import releaseDownloader from './releaseDownloader'
+const releaseDownloader = require('./releaseDownloader')
 import { describe, parseJSON, mkdirpAsync, readdirAsync, 
   readFileAsync, rimrafAsync, testTarballAsync, probeTarballs, probeAppifi,
   retrieveReleasesAsync, extractTarballAsync, tagValue } from './utils'
@@ -460,7 +464,14 @@ function operation(data, callback) {
   }
 }
 
-export default { init, getState, getStatus, operation, dispatch, deleteFruitmix }
+module.exports = { 
+  init, 
+  getState, 
+  getStatus, 
+  operation, 
+  dispatch, 
+  deleteFruitmix 
+}
 
 
 

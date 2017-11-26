@@ -1,13 +1,14 @@
-var fs = require('fs')
-var path = require('path')
-var child = require('child_process')
-var express = require('express')
-var bodyParser = require('body-parser')
-var logger = require('morgan')
-var respawn = require('respawn')
-var UUID = require('node-uuid')
+const path = require('path')
+const fs = require('fs')
+const child = require('child_process')
+const express = require('express')
+const bodyParser = require('body-parser')
+const logger = require('morgan')
 
-import worker from './worker'
+const respawn = require('respawn')
+const UUID = require('uuid')
+
+const worker = require('./worker')
 worker.init().then(r => console.log('worker initialized')).catch(e => console.log(e))
 
 var app = express()
@@ -178,4 +179,5 @@ app.listen(3001, function() {
   })
 })
 
-export default app
+module.exports = app
+

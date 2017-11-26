@@ -1,7 +1,8 @@
-import events from 'events'
-import fs from 'fs'
-import https from 'https'
-import stream from 'stream'
+const path = require('path')
+const fs = require('fs')
+const EventEmitter = require('events')
+const https = require('https')
+const stream = require('stream')
 
 import { describe, createUrlObject, mkdirpAsync, rimrafAsync, testTarballAsync, tarballStripInjectAsync } from './utils'
 
@@ -67,7 +68,7 @@ async function retrieveDownloadStream(redirect) {
   })
 }
 
-class streamResponseToFile extends events {
+class streamResponseToFile extends EventEmitter {
 
   startTimer() {
     if (this.interval) return
@@ -184,7 +185,7 @@ function repackedName(release) {
     (release.prerelease ? 'pre' : 'rel') + '.tar.gz' 
 }
 
-class releaseDownloader extends events {
+class ReleaseDownloader extends EventEmitter {
 
   constructor(release, tarballsDir, tmpDir) {
     super()
@@ -300,6 +301,5 @@ class releaseDownloader extends events {
   }  
 }
 
-export default releaseDownloader
-
+module.exports = ReleaseDownloader
 

@@ -42,5 +42,8 @@ public/bundle.raw
 # working folder
 build/
 
+# testing folder
+tmptest/
+
 # 
 appifi-bootstrap.js
