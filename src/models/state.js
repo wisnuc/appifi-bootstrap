@@ -1,7 +1,10 @@
+const debug = require('debug')('model')
+
 class State {
 
   constructor(ctx, ...args) {
     this.ctx = ctx
+    ctx.state = this
     this.enter(...args)
   }
 

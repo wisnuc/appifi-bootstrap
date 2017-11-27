@@ -4,32 +4,39 @@ const request = require('superagent')
 
 const State = require('./state')
 
+/** constants **/
+const defaultUrl = 'https://api.github.com/repos/wisnuc/appifi-release/releases'
+const HOUR = 3600 * 1000
+
 class Idle extends State {
 
   enter (err, data) {
     super.enter()
-    this.ctx.error = err
-    this.ctx.data = data
+    this.ctx.error = err || null
+    if (data) this.ctx.data = data
 
-    this.timer = this.setTimeout(() => this.setState('Working'), err ? 6 * 3600 * 1000 : 24 * 3600 * 1000) 
+    this.timer = setTimeout(() => 
+      this.setState('Working'), err ? 1 * HOUR : 24 * HOUR) 
 
-    this.emit('update', err, data)    
+    this.ctx.emit('update', err, data)    
   }
 
   exit () {
     clearTimeout(this.timer)
     super.exit()
   }
-}
 
-const url = 'https://api.github.com/repos/wisnuc/appifi-release/releases'
+  // do nothing
+  abort () {
+  }
+}
 
 class Working extends State {
 
   enter () {
     super.enter()
     this.req = request
-      .get(url)
+      .get(this.ctx.url)
       .end((err, res) => {
         if (err) {
           this.setState('Idle', err)
@@ -48,14 +55,30 @@ class Working extends State {
     this.req.abort()
     super.exit()
   }
+
+  abort () {
+    let err = new Error('aborted')
+    err.code = 'EABORT'
+    this.setState('Idle', err)
+  }
 }
 
 class Fetch extends EventEmitter {
 
-  constructor () {
+  constructor (url) {
     super() 
+    this.url = url || defaultUrl 
+    this.error = null
+    this.data = null
     new Working(this)
   }
+
+  abort() {
+    this.state.abort()
+  }
 }
+
+Fetch.prototype.Idle = Idle
+Fetch.prototype.Working = Working
 
 module.exports = Fetch
