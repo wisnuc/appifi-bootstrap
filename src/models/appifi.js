@@ -9,7 +9,7 @@ const State = require('./state')
 // 1. retrieve .release.json, -> Empty if failed
 // 2. if release is not valid, -> Empty
 // 3. if release is valid -> Starting
-const Init extends State {
+class Init extends State {
 
   enter () {
     super.enter()
@@ -40,34 +40,44 @@ const Init extends State {
   }
 }
 
-const Empty extends State {
- 
-}
+class Empty extends State {
 
-const Installing extends State {
-
-}
-
-const Uninstalling extends State {
-
-}
-
-const Stopped extends State {
-
-  enter (retry) {
+  enter () {
     super.enter()
-  }
-
-  exit () {
-  }
+    
+    this.ctx.emit('Empty')
+  } 
 }
 
-const Starting extends State {
+class Installing extends State {
+
+}
+
+class Uninstalling extends State {
 
   enter () {
     super.enter()
 
-    this.ctx.args = [path.join(this.ctx.appifiDir, 'build', 'app.js']
+    
+  }
+}
+
+class Stopped extends State {
+
+  enter (retry) {
+    super.enter()
+
+    this.ctx.emit('Stopped')
+  }
+
+}
+
+class Starting extends State {
+
+  enter () {
+    super.enter()
+
+    this.ctx.args = [path.join(this.ctx.appifiDir, 'build', 'app.js')]
     let appifi = child.spawn(this.ctx.nodePath, args)
     appifi.on('error', err => {})
     appifi.on('close', (code, signal) => {
@@ -87,7 +97,7 @@ const Starting extends State {
   }
 }
 
-const Started extends State {
+class Started extends State {
 
   enter () {
     super.enter()
@@ -109,7 +119,7 @@ const Started extends State {
   }
 }
 
-const Stopping extends State {
+class Stopping extends State {
 }
 
 class Appifi extends EventEmitter {
@@ -117,13 +127,26 @@ class Appifi extends EventEmitter {
   /**
   ctx is the model. ctx.releases is guaranteed to be available.
   */
-  constructor(ctx, appifiDir, nodePath) {
+  constructor(ctx, appifiDir) {
     super()
     this.ctx = ctx
-    this.nodePath = nodePath
-    this.appifiDir = appifiDir
+    this.appifiDir = ctx.appifiDir
+
     new Init(this)
   }
+
+  nodePath () {
+    return this.ctx.nodePath
+  }
 }
+
+Appifi.prototype.Init = Init
+Appifi.prototype.Empty = Empty
+Appifi.prototype.Installing = Installing
+Appifi.prototype.Uninstalling = Uninstalling
+Appifi.prototype.Stopped = Stopped
+Appifi.prototype.Starting = Starting
+Appifi.prototype.Started = Started
+Appifi.prototype.Stopping = Stopping
 
 module.exports = Appifi

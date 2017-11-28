@@ -1,6 +1,8 @@
 const fs = require('fs')
 const EventEmitter = require('events')
 
+const request = require('superagent') 
+
 /**
 returns {
   length: may be undefined, 'unknown', or an integer,
@@ -21,7 +23,7 @@ const download = (url, tmpfile, callback) => {
     rs.on('error', () => {})
     ws.removeAllListeners()
     ws.on('error', () => {})
-    rs.unpipe()
+//    rs.unpipe()
     rs.abort()
     ws.destroy()
   }

@@ -1,11 +1,27 @@
+const path = require('path')
+const fs = require('fs')
 const EventEmitter = require('events')
+
+const rimraf = require('rimraf')
+const mkdirp = require('mkdirp')
+const UUID = require('uuid')
+
+const download = require('../lib/download')
+const { inject, cherryPick } = require('../lib/tarball')
+const { parseTagName, appBallName } = require('../lib/appball') 
 const State = require('./state')
 
 class Idle extends State {
 
-  enter (props) {
+  enter (err) {
     super.enter()
-    Object.assign(this.ctx, props)
+    this.error = err || null
+
+    if (this.ctx.callback) {
+      let cb = this.ctx.callback
+      this.ctx.callback = null
+      cb(err)
+    }
   } 
 
 }
@@ -16,17 +32,25 @@ class Downloading extends State {
     super.enter()
 
     this.tmpFile = path.join(this.ctx.tmpDir, UUID.v4())
-    this.tmpDir = path.join(this.ctx.tmpDir, UUID.v4())
-    this.download = download(this.ctx.release.tarball_url, this.tmpFile, err => {
+    this.download = download(this.ctx.remote.tarball_url, this.tmpFile, err => {
       this.download = null  
-      if (err) return this.setState('Failed', err)
+      if (err) {
+        rimraf(this.tmpFile, () => {})
+        this.setState('Idle', err)
+      } else {
+        this.setState('Repacking', this.tmpFile)
+      }
     })
   }
 
   exit () {
-    if (this.download) this.download.destroy()
+    if (this.download) {
+      this.download.destroy()
+      rimraf(this.tmpFile, () => {})
+    }
     super.exit()
   }
+
 }
 
 class Repacking extends State {
@@ -34,13 +58,26 @@ class Repacking extends State {
   enter (tmpFile) {
     super.enter()
 
-    let oldPath = tmpFile
-    let newPath = path.join(this.ctx.tmpDir, UUID.v4())
+    this.oldPath = tmpFile
+    this.newPath = path.join(this.ctx.tmpDir, UUID.v4())
 
-    this.inject = inject(oldPath, newPath, '.release.json', JSON.stringify(this.ctx.remote), err => {
-      if (err) return this.setState('Failed', err)
+    this.inject = inject(this.oldPath, this.newPath, '.release.json', JSON.stringify(this.ctx.remote), err => {
+      this.inject = null
+
+      if (err) {
+        this.setState('Idle', err)
+      } else {
+        this.setState('Verifying', this.newPath)
+      }
      
     }) 
+  }
+
+  exit () {
+    // TODO    
+    rimraf(this.oldPath, () => {})
+    
+    super.exit()
   }
 }
 
@@ -49,6 +86,8 @@ class Verifying extends State {
   enter (tmpFile) {
     super.enter()
 
+    this.tmpFile = tmpFile
+
     cherryPick(tmpFile, './.release.json', (err, data) => {
       if (err || !data) return this.setState('Failed', err)
       let local
@@ -56,25 +95,39 @@ class Verifying extends State {
         local = JSON.parse(data)
       } catch (e) {
         let err = new Error('error parsing cherry-picked .release.json')
-        this.setState('Failed', err)
+        this.setState('Idle', err)
       }
 
       cherryPick(tmpFile, './package.json', (err, data) => {
         if (err || !data) return this.setState('Failed', err)
         try {
-          config = JSON.parse(data)
-          let props = 
-          this.setState('Idle', props)
+          let config = JSON.parse(data)
+          let ballName = appBallName(this.ctx.remote)
+          let ballPath = path.join(this.ctx.appBallsDir, ballName)
+
+          fs.rename(tmpFile, ballPath, err => {
+            if (err) {
+              this.setState('Idle', err)
+            } else {
+              this.ctx.path = ballPath
+              this.ctx.local = local
+              this.ctx.config = config
+              this.setState('Idle')
+            }
+          })
+
         } catch (e) {
-          let err = new Error('error parsing cherry-picked package.json')
-          this.setState('Failed', err)
+          this.setState('Idle', e)
         }
       })
     })
   }
-}
 
-class Failed extends State {
+  exit () {
+    rimraf(this.tmpFile, () => {}) 
+    
+    super.exit()
+  }
 }
 
 /**
@@ -120,12 +173,11 @@ class Release extends EventEmitter {
 
     Object.assign(this, props)
 
-    // alias
-    Object.defineProperty(this, 'model', { 
-      get: function () {
-        return this.ctx
-      } 
-    })
+    new Idle(this)
+  }
+
+  tagAttr () {
+    return parseTagName(this.tagName())
   }
 
   tagName () {
@@ -135,7 +187,7 @@ class Release extends EventEmitter {
   }
 
   tagValue () {
-    
+    return this.tagAttr().value 
   }
 
   // it is possible that the local is created first
@@ -143,7 +195,20 @@ class Release extends EventEmitter {
     this.remote = remote
   }
 
-  download () { 
+  download (callback) {
+    if (!this.remote) 
+      return process.nextTick(() => callback(new Error('no remote')))
+    if (this.local) 
+      return process.nextTick(() => callback(new Error('already downloaded')))
+
+    if (!(this.state instanceof Idle)) {
+      let err = new Error('busy')
+      err.code = 'EBUSY'
+      return process.nextTick(() => callback(err))
+    }
+
+    this.state.setState('Downloading')
+    this.callback = callback || null
   }
 }
 
@@ -151,7 +216,6 @@ Release.prototype.Idle = Idle
 Release.prototype.Downloading = Downloading
 Release.prototype.Repacking = Repacking
 Release.prototype.Verifying = Verifying
-Release.prototype.Failed = Failed
 
 module.exports = Release
 
