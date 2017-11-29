@@ -1,3 +1,5 @@
+const EventEmitter = require('events')
+
 const debug = require('debug')('model')
 
 class State {
@@ -6,6 +8,10 @@ class State {
     this.ctx = ctx
     ctx.state = this
     this.enter(...args)
+
+    if (ctx instanceof EventEmitter) {
+      ctx.emit(this.constructor.name)
+    }
   }
 
   setState (state, ...args) {

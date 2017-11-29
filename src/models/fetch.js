@@ -13,12 +13,12 @@ class Idle extends State {
   enter (err, data) {
     super.enter()
     this.ctx.error = err || null
-    if (data) this.ctx.data = data
+    this.ctx.data = data || null
 
     this.timer = setTimeout(() => 
       this.setState('Working'), err ? 1 * HOUR : 24 * HOUR) 
 
-    this.ctx.emit('update', err, data)    
+    if (data) this.ctx.emit('update', data)
   }
 
   exit () {
@@ -71,6 +71,10 @@ class Fetch extends EventEmitter {
     this.error = null
     this.data = null
     new Working(this)
+  }
+
+  start () {
+
   }
 
   abort() {

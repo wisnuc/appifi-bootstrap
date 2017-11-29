@@ -9,21 +9,46 @@ const UUID = require('uuid')
 const download = require('../lib/download')
 const { inject, cherryPick } = require('../lib/tarball')
 const { parseTagName, appBallName } = require('../lib/appball') 
-const State = require('./state')
+const Base = require('./state')
 
-class Idle extends State {
+class State extends Base {
+  start () {}
+  stop () {}
+}
+
+// has local, with or without remote
+class Ready extends State {
+
+  enter (props = {}) {
+    super.enter()
+    Object.assign(this.ctx, props)
+    this.ctx.ctx.reqSchedule()
+  }
+}
+
+
+// stopped, no local
+class Idle extends State { 
+
+  start () {
+    this.setState('Downloading')
+  }
+}
+
+// timeout to download 
+class Failed extends State {
 
   enter (err) {
     super.enter()
-    this.error = err || null
+    this.error = err
+    this.time = new Date().getTime()
+    this.timer = setTimeout(() => this.state.setState('Downloading'), 3600 * 1000)
+  }
 
-    if (this.ctx.callback) {
-      let cb = this.ctx.callback
-      this.ctx.callback = null
-      cb(err)
-    }
-  } 
-
+  exit () {
+    clearTimeout(this.timer)
+    super.exit()
+  }
 }
 
 class Downloading extends State {
@@ -36,7 +61,7 @@ class Downloading extends State {
       this.download = null  
       if (err) {
         rimraf(this.tmpFile, () => {})
-        this.setState('Idle', err)
+        this.setState('Failed', err)
       } else {
         this.setState('Repacking', this.tmpFile)
       }
@@ -51,6 +76,9 @@ class Downloading extends State {
     super.exit()
   }
 
+  stop () {
+    this.setState('Idle')
+  }
 }
 
 class Repacking extends State {
@@ -63,9 +91,8 @@ class Repacking extends State {
 
     this.inject = inject(this.oldPath, this.newPath, '.release.json', JSON.stringify(this.ctx.remote), err => {
       this.inject = null
-
       if (err) {
-        this.setState('Idle', err)
+        this.setState('Failed', err)
       } else {
         this.setState('Verifying', this.newPath)
       }
@@ -75,9 +102,13 @@ class Repacking extends State {
 
   exit () {
     // TODO    
+    if (this.inject) this.inject.destroy()
     rimraf(this.oldPath, () => {})
-    
     super.exit()
+  }
+
+  stop () {
+    this.setState('Idle')
   }
 }
 
@@ -95,7 +126,7 @@ class Verifying extends State {
         local = JSON.parse(data)
       } catch (e) {
         let err = new Error('error parsing cherry-picked .release.json')
-        this.setState('Idle', err)
+        this.setState('Failed', err)
       }
 
       cherryPick(tmpFile, './package.json', (err, data) => {
@@ -107,12 +138,9 @@ class Verifying extends State {
 
           fs.rename(tmpFile, ballPath, err => {
             if (err) {
-              this.setState('Idle', err)
+              this.setState('Failed', err)
             } else {
-              this.ctx.path = ballPath
-              this.ctx.local = local
-              this.ctx.config = config
-              this.setState('Idle')
+              this.setState('Ready', { path: ballPath, local, config })
             }
           })
 
@@ -125,10 +153,14 @@ class Verifying extends State {
 
   exit () {
     rimraf(this.tmpFile, () => {}) 
-    
     super.exit()
   }
+
+  stop () {
+    this.setState('Idle')
+  }
 }
+
 
 /**
 { path: '/home/wisnuc/appifi-bootstrap/tmptest/appifi-0.9.14-8501308-c8ffd8ab-rel.tar.gz',
@@ -170,10 +202,23 @@ class Release extends EventEmitter {
     this.ctx = ctx
     this.tmpDir = ctx.tmpDir
     this.appBallsDir = ctx.appBallsDir
-
     Object.assign(this, props)
 
-    new Idle(this)
+    if (this.local) {
+      new Ready(this)
+    } else {
+      new Idle(this)
+    }
+  }
+
+  getState() {
+    return this.state.constructor.name
+  }
+
+  isBeta () {
+    return this.remote 
+      ? this.remote.prerelease
+      : this.local.prerelease
   }
 
   tagAttr () {
@@ -195,24 +240,20 @@ class Release extends EventEmitter {
     this.remote = remote
   }
 
-  download (callback) {
-    if (!this.remote) 
-      return process.nextTick(() => callback(new Error('no remote')))
-    if (this.local) 
-      return process.nextTick(() => callback(new Error('already downloaded')))
-
-    if (!(this.state instanceof Idle)) {
-      let err = new Error('busy')
-      err.code = 'EBUSY'
-      return process.nextTick(() => callback(err))
-    }
-
-    this.state.setState('Downloading')
-    this.callback = callback || null
+  start () {
+    this.state.start()
   }
+
+  stop () {
+    console.log('stop')
+    this.state.stop()
+  }
+
 }
 
 Release.prototype.Idle = Idle
+Release.prototype.Ready = Ready
+Release.prototype.Failed = Failed
 Release.prototype.Downloading = Downloading
 Release.prototype.Repacking = Repacking
 Release.prototype.Verifying = Verifying
