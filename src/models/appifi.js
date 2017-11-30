@@ -196,6 +196,13 @@ class Appifi extends EventEmitter {
   async stopAsync () {
     return new Promise((res, rej) => this.stop(err => err ? rej(err) : res(null)))
   }
+
+  view () {
+    return {
+      state: this.getState(),
+      tagName: this.tagName
+    }
+  }
 }
 
 Appifi.prototype.Stopped = Stopped

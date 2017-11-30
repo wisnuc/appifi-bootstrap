@@ -27,6 +27,10 @@ class State {
     debug(`${this.ctx.constructor.name} exit ${this.constructor.name} state`)
   }
 
+  view () {
+    return null
+  }
+
   destroy () {
     this.exit()
   }

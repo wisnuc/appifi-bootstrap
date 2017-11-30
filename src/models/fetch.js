@@ -8,15 +8,19 @@ const State = require('./state')
 const defaultUrl = 'https://api.github.com/repos/wisnuc/appifi-release/releases'
 const HOUR = 3600 * 1000
 
-class Idle extends State {
+class Pending extends State {
 
   enter (err, data) {
     super.enter()
-    this.ctx.error = err || null
-    this.ctx.data = data || null
+    this.ctx.last = {
+      time: new Date().getTime(),
+      error: err || null,
+      data: data || null
+    }
 
-    this.timer = setTimeout(() => 
-      this.setState('Working'), err ? 1 * HOUR : 24 * HOUR) 
+    this.startTime = new Date().getTime()
+    this.timeout = err ? 1 * HOUR : 24 * HOUR
+    this.timer = setTimeout(() => this.setState('Working'), this.timeout) 
 
     if (data) this.ctx.emit('update', data)
   }
@@ -26,8 +30,15 @@ class Idle extends State {
     super.exit()
   }
 
-  // do nothing
-  abort () {
+  view () {
+    return {
+      startTime: this.startTime,
+      timeout: this.timeout,
+    }  
+  }
+
+  start () {
+    this.setState('Working')
   }
 }
 
@@ -39,14 +50,14 @@ class Working extends State {
       .get(this.ctx.url)
       .end((err, res) => {
         if (err) {
-          this.setState('Idle', err)
+          this.setState('Pending', err)
         } else if (!res.ok) {
           let err = new Error('http error')
           err.code = 'EHTTPSTATUS' 
           err.res = res
-          this.setState('Idle', err)
+          this.setState('Pending', err)
         } else {
-          this.setState('Idle', null, res.body)
+          this.setState('Pending', null, res.body)
         }
       })
   }
@@ -56,11 +67,7 @@ class Working extends State {
     super.exit()
   }
 
-  abort () {
-    let err = new Error('aborted')
-    err.code = 'EABORT'
-    this.setState('Idle', err)
-  }
+  start () {}
 }
 
 class Fetch extends EventEmitter {
@@ -68,21 +75,44 @@ class Fetch extends EventEmitter {
   constructor (url) {
     super() 
     this.url = url || defaultUrl 
-    this.error = null
-    this.data = null
+    this.last = null
+
     new Working(this)
   }
 
-  start () {
-
+  getState() {
+    return this.state.constructor.name
   }
 
-  abort() {
-    this.state.abort()
+  start () {
+    this.state.start()
+  }
+
+  view () {
+    let last = null
+    if (this.last) {
+      last = Object.assign({}, this.last)
+      if (last.error) {
+        last.error = {
+          message: last.error.message,
+          code: last.error.code
+        }
+      }
+    }
+
+    return {
+      state: this.getState(),
+      view: this.state.view(),
+      last,
+    } 
+  }
+
+  destroy () {
+    this.state.destroy()
   }
 }
 
-Fetch.prototype.Idle = Idle
+Fetch.prototype.Pending = Pending
 Fetch.prototype.Working = Working
 
 module.exports = Fetch

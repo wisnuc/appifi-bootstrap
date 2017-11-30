@@ -27,7 +27,7 @@ const probeAppifi = (dir, callback) =>
 
 const probeAppifiAsync = Promise.promisify(probeAppifi)
 
-const initAsync = async root => {
+const initAsync = async (root, githubUrl) => {
 
   let appifiDir = path.join(root, 'appifi')
   let appBallsDir = path.join(root, 'appifi-tarballs')
@@ -39,7 +39,7 @@ const initAsync = async root => {
 
   let appBalls = await probeAppBallsAsync(appBallsDir)
 
-  let tagName
+  let tagName, isBeta
   try {
     let release = await probeAppifiAsync(appifiDir)
 
@@ -47,6 +47,7 @@ const initAsync = async root => {
       let localTagNames = appBalls.map(ball => ball.local.tag_name)
       if (localTagnames.includes(release.tag_name)) {
         tagName = release.tag_name
+        isBeta = release.prerelease
       } else {
         throw new Error('current tag name not found')
       }
@@ -56,10 +57,10 @@ const initAsync = async root => {
     await mkdirpAsync(appifiDir)
   }
 
-  return new Model(root, appBalls, tagName) 
+  return new Model(root, githubUrl, appBalls, tagName, isBeta) 
 }
 
-const init = (root, callback) => initAsync(root)
+const init = (root, githubUrl, callback) => initAsync(root, githubUrl)
   .then(model => callback(null, model))
   .catch(e => callback(e))
 

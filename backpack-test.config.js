@@ -1,9 +1,4 @@
-const Promise = require('bluebird')
-const path = require('path')
-const fs = Promise.promisifyAll(require('fs'))
-
-const webpack = require('webpack')
-const config = {
+module.exports = {
 
   context: __dirname,
   entry: ['./src/app2.js'],
@@ -20,13 +15,6 @@ const config = {
     preLoaders: [
         { test: /\.json$/, loader: 'json'},
     ],
-  },
+  }
 }
-
-const compiler = webpack(config)
-
-compiler.run((err, stats) => {
-  console.log(err, stats)
-})
-
 

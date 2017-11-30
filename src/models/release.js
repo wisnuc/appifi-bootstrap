@@ -14,6 +14,10 @@ const Base = require('./state')
 class State extends Base {
   start () {}
   stop () {}
+
+  view () {
+    return null
+  }
 }
 
 // has local, with or without remote
@@ -41,13 +45,29 @@ class Failed extends State {
   enter (err) {
     super.enter()
     this.error = err
-    this.time = new Date().getTime()
-    this.timer = setTimeout(() => this.state.setState('Downloading'), 3600 * 1000)
+    this.startTime = new Date().getTime()
+    this.timeout = 3600 * 1000
+    this.timer = setTimeout(() => this.state.setState('Downloading'), this.timeout)
   }
 
   exit () {
     clearTimeout(this.timer)
     super.exit()
+  }
+
+  view () {
+    return {
+      startTime: this.startTime,
+      timeout: this.timeout,
+      message: this.error.message,
+      code: this.error.code
+    }
+  }
+
+  start (instant) {
+    if (instant) {
+      this.setState('Downloading')
+    }
   }
 }
 
@@ -78,6 +98,13 @@ class Downloading extends State {
 
   stop () {
     this.setState('Idle')
+  }
+
+  view () {
+    return {
+      length: this.download.length, 
+      bytesWritten: this.download.bytesWritten
+    }
   }
 }
 
@@ -245,10 +272,17 @@ class Release extends EventEmitter {
   }
 
   stop () {
-    console.log('stop')
     this.state.stop()
   }
 
+  view () {
+    return {
+      state: this.getState(),
+      view: this.state.view(),
+      remote: this.remote || null,
+      local: this.local || null
+    }
+  }
 }
 
 Release.prototype.Idle = Idle

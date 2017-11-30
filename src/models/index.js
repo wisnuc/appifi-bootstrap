@@ -27,7 +27,7 @@ class Model extends EventEmitter {
   // root: root directory
   // appBalls: similar to release but has no remote.
   // ctag: current tag_name if found
-  constructor(root, githubUrl, appBalls, tagName) {
+  constructor(root, githubUrl, appBalls, tagName, isBeta) {
     super()
 
     this.useBeta = false
@@ -53,9 +53,12 @@ class Model extends EventEmitter {
       this.reqSchedule()      
     })
 
-    // this.node = new Node()
+    this.appifi = null
 
-    this.appifi = tagName ? new Appifi(this, tagName) : null
+    if (tagName) {
+      this.appifi = new Appifi(this, tagName)
+      this.useBeta = !!isBeta
+    }
   }
 
   nodePath () {
@@ -160,10 +163,12 @@ class Model extends EventEmitter {
   view () {
     return {
       beta: this.useBeta,
-      appifi: this.appifi.view(),
+      operating: this.operating,
+      appifi: this.appifi ? this.appifi.view() : null,
       releases: this.releases.map(r => r.view()),
-      node: this.node.view(),
-      deb: this.deb.view()
+      fetch: this.fetch.view(),
+//      node: this.node.view(),
+//      deb: this.deb.view()
     }
   }
 
