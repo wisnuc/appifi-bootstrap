@@ -20,6 +20,9 @@ const Fetch = require('./fetch')
 const Release = require('./release')
 const Node = require('./node')
 
+const ERace = Object.assign(new Error('another operation is in progress'), { code: 'ERACE', status: 403 })
+const EApp404 = Object.assign(new Error('app not installed'), { code: 'ENOTFOUND', status: 404 })
+
 // const githubUrl = 'https://api.github.com/repos/wisnuc/appifi-release/releases'
 
 class Model extends EventEmitter {
@@ -96,7 +99,7 @@ class Model extends EventEmitter {
   }
 
   schedule () {
-    if (this.operating) return
+    if (this.operation) return
 
     this.scheduled = false
 
@@ -107,16 +110,16 @@ class Model extends EventEmitter {
     if (!this.appifi) {
       let latestReady = this.releases.find(r => r.getState() === 'Ready')
       if (latestReady) {
-        this.install(latestReady.tagName(), () => {})
+        this.appInstall(latestReady.tagName(), () => {})
       }
     }
   }
 
-  install (tagName, callback) {
-    this.operating = 'install'
-    this.installAsync(tagName) 
-      .then(() => (this.operating = null, callback(null)))
-      .catch(e => (this.operating = null, callback(e)))
+  destroy () {
+    this.scheduled = true
+
+    if (this.appifi) this.appifi.stop()
+    this.releases.forEach(r => r.stop())
   }
 
   /////////////////////////////////////////////////////////////////////////////
@@ -134,7 +137,19 @@ class Model extends EventEmitter {
   async installAsync (tagName) {
     // find release
     let release = this.releases.find(r => r.local && r.local.tag_name === tagName)
-    if (!release) throw new Error('no downloaded file for given tag name')
+    if (!release) {
+      let err = new Error('release not found for given tag name')
+      err.code = 'ENOTFOUND'
+      err.status = 400
+      throw err
+    }
+
+    if (release.getState() !== 'Ready') {
+      let err = new Error('release is not ready for install')
+      err.code = 'ENOTREADY'
+      err.status = 400
+      throw err
+    }
 
     // untar into tmp dir
     let tmpDir = path.join(this.tmpDir, UUID.v4()) 
@@ -160,10 +175,12 @@ class Model extends EventEmitter {
     this.appifi = new Appifi(this, tagName)
   }
 
+  //////////////////////////////////////////////////////////////////////////////
+
   view () {
     return {
       beta: this.useBeta,
-      operating: this.operating,
+      operation: this.operation,
       appifi: this.appifi ? this.appifi.view() : null,
       releases: this.releases.map(r => r.view()),
       fetch: this.fetch.view(),
@@ -172,11 +189,59 @@ class Model extends EventEmitter {
     }
   }
 
-  destroy () {
-    this.scheduled = true
+  appInstall (tagName, callback) {
+    if (this.operation) return process.nextTick(() => callback(ERace))
+    this.operation = 'appInstall'
+    this.installAsync(tagName) 
+      .then(() => (this.operation = null, callback(null)))
+      .catch(e => (this.operation = null, callback(e)))
+  }
 
-    if (this.appifi) this.appifi.stop()
-    this.releases.forEach(r => r.stop())
+  appStart (callback) {
+    if (!this.appifi) return process.nextTick(() => callback(EApp404))
+    if (this.operation) return process.nextTick(() => callback(ERace))
+    this.operation = 'appStart'
+    this.appifi.startAsync()
+      .then(() => (this.operation = null, callback(null)))  
+      .catch(e => (this.operation = null, callback(e)))
+  }
+
+  appStop (callback) {
+    if (!this.appifi) return process.nextTick(() => callback(EApp404))
+    if (this.operation) return process.nextTick(() => callback(ERace))
+    this.operation = 'appStop'
+    this.appifi.stopAsync()
+      .then(() => (this.operation = null, callback(null)))  
+      .catch(e => (this.operation = null, callback(e)))
+  }
+
+  releaseStart(tagName, callback) {
+    let release = this.releases.find(r => r.tagName() === tagName)
+    if (!release) {
+      let err = new Error('release not found for given tag name')
+      err.code = 'ENOTFOUND'
+      err.status = 404
+      return process.nextTick(() => callback(err))
+    }
+    release.start()
+    callback(null)
+  }
+
+  releaseStop(tagName, callback) {
+    let release = this.releases.find(r => r.tagName() === tagName)
+    if (!release) {
+      let err = new Error('release not found for given tag name')
+      err.code = 'ENOTFOUND'
+      err.status = 404
+      return process.nextTick(() => callback(err))
+    }
+    release.stop()
+    callback(null)
+  }
+
+  fetchStart(callback) {
+    this.fetch.start()
+    process.nextTick(() => callback(null))
   }
 }
 
